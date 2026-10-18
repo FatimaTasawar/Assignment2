@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrainSprint | Interactive Web Quiz</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f7fb; --panel: #fff; --ink: #202a44; --muted: #75809a;
+      --line: #e4e9f2; --violet: #6d5ce8; --cyan: #18b6c9;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font-family: Inter, Arial, sans-serif; }
+    body.night { --bg: #111827; --panel: #1f2937; --ink: #f3f4f6; --muted: #b5bfd0; --line: #374151; }
+    .top-strip { height: 7px; background: linear-gradient(90deg, #6d5ce8, #18b6c9, #f59e0b, #e879f9); }
+    .shell { max-width: 1000px; margin: auto; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 12px 35px rgba(26, 37, 75, .07); }
+    .logo { width: 45px; height: 45px; display: grid; place-items: center; color: white; border-radius: 14px; font-size: 22px; font-weight: 800; background: linear-gradient(140deg, #6d5ce8, #18b6c9); }
+    .muted { color: var(--muted); }
+    .btn-brand { color: white; background: var(--violet); border: 1px solid var(--violet); }
+    .btn-brand:hover { color: white; background: #5545ca; }
+    .chip { background: rgba(109, 92, 232, .10); color: var(--violet); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 800; letter-spacing: .05em; }
+    .metric { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 15px; height: 100%; }
+    .answer { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 14px; margin-bottom: 10px; text-align: left; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 13px; }
+    .answer:hover:not(:disabled) { border-color: var(--violet); transform: translateY(-1px); }
+    .answer:disabled { opacity: 1; }
+    .letter { flex: 0 0 30px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: var(--bg); font-weight: 800; color: var(--violet); }
+    .answer.good { border-color: #16a34a; background: rgba(22,163,74,.11); }
+    .answer.bad { border-color: #dc2626; background: rgba(220,38,38,.11); }
+    .track { height: 10px; background: var(--line); border-radius: 50px; overflow: hidden; }
+    .fill { height: 100%; width: 0; background: linear-gradient(90deg, #6d5ce8, #18b6c9); transition: width .2s; }
+    .timer-pill { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .hide { display: none !important; }
+    .score-disc { width: 118px; height: 118px; margin: auto; display: grid; place-items: center; border-radius: 50%; color: #fff; font-size: 30px; font-weight: 800; background: conic-gradient(#6d5ce8, #18b6c9, #6d5ce8); box-shadow: inset 0 0 0 9px rgba(255,255,255,.12); }
+    .review { border: 1px solid var(--line); border-radius: 12px; padding: 13px; margin-bottom: 10px; }
+    @media (max-width: 576px) { .main-title { font-size: 2rem; } .panel { border-radius: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="top-strip"></div>
+  <div class="container shell py-4 py-md-5">
+    <header class="d-flex justify-content-between align-items-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="logo">B</div>
+        <div><div class="fw-bold fs-5">BrainSprint</div><div class="muted small">Web Skills Challenge</div></div>
+      </div>
+      <button id="modeBtn" class="btn btn-outline-secondary rounded-pill" type="button">🌙 Night mode</button>
+    </header>
+
+    <main>
+      <section id="welcome" class="panel p-4 p-md-5">
+        <span class="chip">QUICK CHALLENGE</span>
+        <h1 class="main-title display-5 fw-bold mt-3 mb-3">How well do you know the web?</h1>
+        <p class="muted fs-6 mb-4">A short challenge covering web page structure, styling, JavaScript and responsive design. Choose carefully: each question gives instant feedback.</p>
+        <div class="row g-3 mb-4">
+          <div class="col-4"><div class="metric"><div class="h3 fw-bold mb-0">05</div><div class="small muted">Questions</div></div></div>
+          <div class="col-4"><div class="metric"><div class="h3 fw-bold mb-0">75s</div><div class="small muted">Time limit</div></div></div>
+          <div class="col-4"><div class="metric"><div class="h3 fw-bold mb-0">PDF</div><div class="small muted">Score report</div></div></div>
+        </div>
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+          <span class="muted small">Questions are shuffled each time you start.</span>
+          <button id="beginBtn" class="btn btn-brand btn-lg rounded-pill px-4" type="button">Begin challenge ↗</button>
+        </div>
+      </section>
+
+      <section id="game" class="panel p-4 p-md-5 hide">
+        <div class="d-flex justify-content-between align-items-center mb-3 gap-3">
+          <div><div id="stepLabel" class="small fw-bold" style="color:var(--violet)">ROUND 1 / 5</div><div class="muted small mt-1" id="doneLabel">0 completed</div></div>
+          <div class="timer-pill" id="clock">01:15</div>
+        </div>
+        <div class="track mb-4"><div id="meter" class="fill"></div></div>
+        <h2 id="prompt" class="h4 fw-bold mb-4">Question</h2>
+        <div id="choices"></div>
+        <div id="hint" class="small fw-semibold mb-3" aria-live="polite"></div>
+        <div class="d-flex justify-content-between align-items-center gap-3 mt-3">
+          <span class="muted small">One answer per round</span>
+          <button id="continueBtn" class="btn btn-brand rounded-pill px-4" disabled type="button">Continue →</button>
+        </div>
+      </section>
+
+      <section id="finish" class="panel p-4 p-md-5 text-center hide">
+        <div class="score-disc mb-3" id="score">0/5</div>
+        <h2 id="finishTitle" class="h2 fw-bold">Challenge finished</h2>
+        <p id="summary" class="muted mb-4"></p>
+        <div class="row g-3 text-start mb-4">
+          <div class="col-6"><div class="metric"><div id="rightTotal" class="h3 fw-bold mb-1">0</div><div class="muted small">Correct</div></div></div>
+          <div class="col-6"><div class="metric"><div id="missTotal" class="h3 fw-bold mb-1">0</div><div class="muted small">Incorrect / skipped</div></div></div>
+        </div>
+        <div id="audit" class="text-start mb-4"></div>
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+          <button id="saveBtn" class="btn btn-brand rounded-pill px-4" type="button">Download score PDF</button>
+          <button id="againBtn" class="btn btn-outline-secondary rounded-pill px-4" type="button">Play again</button>
+        </div>
+      </section>
+    </main>
+    <footer class="muted text-center small mt-4">BrainSprint · Built with HTML, CSS, JavaScript & Bootstrap</footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const bank = [
+      { q: "Which part of an HTML document contains page metadata?", a: ["<footer>", "<head>", "<main>", "<section>"], correct: 1, why: "The head contains metadata, the title and linked resources." },
+      { q: "Which CSS property adds space inside an element's border?", a: ["margin", "padding", "outline", "gap-only"], correct: 1, why: "Padding is the space between content and its border." },
+      { q: "Which event runs when a user clicks a button?", a: ["onload", "onchange", "onclick", "onresize"], correct: 2, why: "A click event responds to a user's click." },
+      { q: "What does responsive design help a website do?", a: ["Work across screen sizes", "Turn HTML into a database", "Remove all CSS", "Disable mobile browsers"], correct: 0, why: "Responsive design adapts layout to different screens." },
+      { q: "Which Bootstrap class is commonly used to create a horizontal flex layout?", a: [".d-flex", ".text-bold", ".img-only", ".font-row"], correct: 0, why: "Bootstrap's d-flex class applies display:flex." },
+      { q: "Which HTML element is used for the largest standard heading?", a: ["<h6>", "<head>", "<h1>", "<header-title>"], correct: 2, why: "h1 is the highest-level standard HTML heading." },
+      { q: "Which JavaScript value represents an intentional absence of a value?", a: ["null", "border", "padding", "static"], correct: 0, why: "null is a JavaScript value representing no object value." },
+      { q: "What does CSS stand for?", a: ["Creative Site Setup", "Cascading Style Sheets", "Computer Styled Sections", "Color System Software"], correct: 1, why: "CSS stands for Cascading Style Sheets." }
+    ];
+
+    const TOTAL = 5, START_SECONDS = 75;
+    let rounds = [], picked = [], position = 0, remaining = START_SECONDS, clockId = null, isOver = false;
+    const el = id => document.getElementById(id);
+    function shuffled(list) {
+      const copy = [...list];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+    function begin() {
+      rounds = shuffled(bank).slice(0, TOTAL);
+      picked = Array(TOTAL).fill(null); position = 0; remaining = START_SECONDS; isOver = false;
+      el("welcome").classList.add("hide"); el("finish").classList.add("hide"); el("game").classList.remove("hide");
+      drawRound(); showClock(); clearInterval(clockId);
+      clockId = setInterval(() => { remaining--; showClock(); if (remaining <= 0) complete(true); }, 1000);
+    }
+    function showClock() {
+      el("clock").textContent = `${String(Math.floor(remaining / 60)).padStart(2,"0")}:${String(remaining % 60).padStart(2,"0")}`;
+      el("clock").style.color = remaining <= 10 ? "#dc2626" : "var(--ink)";
+    }
+    function drawRound() {
+      const item = rounds[position];
+      el("stepLabel").textContent = `ROUND ${position + 1} / ${TOTAL}`;
+      el("doneLabel").textContent = `${picked.filter(v => v !== null).length} completed`;
+      el("prompt").textContent = item.q; el("choices").innerHTML = ""; el("hint").textContent = "";
+      el("continueBtn").disabled = true;
+      el("continueBtn").textContent = position === TOTAL - 1 ? "See results ✓" : "Continue →";
+      el("meter").style.width = `${position / TOTAL * 100}%`;
+      item.a.forEach((answer, i) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "answer";
+        const letter = document.createElement("span"); letter.className = "letter"; letter.textContent = String.fromCharCode(65 + i);
+        const label = document.createElement("span"); label.textContent = answer;
+        b.append(letter, label); b.addEventListener("click", () => choose(i)); el("choices").appendChild(b);
+      });
+    }
+    function choose(i) {
+      if (isOver || picked[position] !== null) return;
+      const item = rounds[position]; picked[position] = i;
+      [...el("choices").children].forEach((b, j) => {
+        b.disabled = true;
+        if (j === item.correct) b.classList.add("good");
+        if (j === i && i !== item.correct) b.classList.add("bad");
+      });
+      const good = i === item.correct;
+      el("hint").textContent = `${good ? "Correct! " : "Incorrect. "}${item.why}`;
+      el("hint").style.color = good ? "#16a34a" : "#dc2626";
+      el("continueBtn").disabled = false;
+      el("doneLabel").textContent = `${picked.filter(v => v !== null).length} completed`;
+      el("meter").style.width = `${(position + 1) / TOTAL * 100}%`;
+      el("meter").style.background = good ? "#16a34a" : "#dc2626";
+    }
+    function advance() {
+      if (picked[position] === null) return;
+      if (position < TOTAL - 1) { position++; drawRound(); }
+      else complete(false);
+    }
+    function complete(timedOut) {
+      if (isOver) return;
+      isOver = true; clearInterval(clockId); el("game").classList.add("hide"); el("finish").classList.remove("hide");
+      const correct = rounds.reduce((n, q, i) => n + (picked[i] === q.correct ? 1 : 0), 0);
+      el("score").textContent = `${correct}/${TOTAL}`;
+      el("finishTitle").textContent = timedOut ? "Time has ended" : "Nice work!";
+      el("summary").textContent = `Your score is ${Math.round(correct / TOTAL * 100)}%. Review the answers below or save a PDF copy.`;
+      el("rightTotal").textContent = correct; el("missTotal").textContent = TOTAL - correct;
+      el("audit").innerHTML = "<h3 class='h6 fw-bold mb-3'>Your answer review</h3>";
+      rounds.forEach((q, i) => {
+        const card = document.createElement("div"); card.className = "review";
+        const question = document.createElement("div"); question.className = "fw-bold mb-1"; question.textContent = `${i + 1}. ${q.q}`;
+        const chosen = document.createElement("div"); chosen.className = "small muted"; chosen.textContent = `Selected: ${picked[i] === null ? "Skipped" : q.a[picked[i]]}`;
+        const answer = document.createElement("div"); answer.className = "small text-success"; answer.textContent = `Correct answer: ${q.a[q.correct]}`;
+        card.append(question, chosen, answer); el("audit").appendChild(card);
+      });
+    }
+    function savePDF() {
+      if (!window.jspdf || !window.jspdf.jsPDF) { alert("Please connect to the internet and try again; the PDF library did not load."); return; }
+      const { jsPDF } = window.jspdf, doc = new jsPDF();
+      const score = rounds.reduce((n, q, i) => n + (picked[i] === q.correct ? 1 : 0), 0);
+      doc.setFontSize(20); doc.text("BrainSprint - Quiz Report", 15, 20);
+      doc.setFontSize(12); doc.text(`Final score: ${score}/${TOTAL} (${Math.round(score/TOTAL*100)}%)`, 15, 32);
+      let y = 47;
+      rounds.forEach((q, i) => {
+        const chosen = picked[i] === null ? "Skipped" : q.a[picked[i]];
+        const lines = doc.splitTextToSize(`${i+1}. ${q.q}\nSelected: ${chosen}\nCorrect answer: ${q.a[q.correct]}`, 175);
+        if (y + lines.length * 7 > 280) { doc.addPage(); y = 20; }
+        doc.text(lines, 15, y); y += lines.length * 7 + 8;
+      });
+      doc.save("BrainSprint-Quiz-Report.pdf");
+    }
+    el("beginBtn").addEventListener("click", begin);
+    el("continueBtn").addEventListener("click", advance);
+    el("againBtn").addEventListener("click", begin);
+    el("saveBtn").addEventListener("click", savePDF);
+    el("modeBtn").addEventListener("click", () => {
+      document.body.classList.toggle("night");
+      el("modeBtn").textContent = document.body.classList.contains("night") ? "☀️ Day mode" : "🌙 Night mode";
+    });
+  </script>
+</body>
+</html>
